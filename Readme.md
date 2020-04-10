@@ -1,5 +1,5 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Build Status:](https://travis-ci.com/DonRomanos/Challenge_Template.svg?branch=master)](https://travis-ci.com/DonRomanos/Challenge_Template.svg?branch=master)
+[![Build Status:](https://travis-ci.com/DonRomanos/JustAnotherInterviewTask.svg?branch=master)](https://travis-ci.com/DonRomanos/JustAnotherInterviewTask.svg?branch=master)
 
 # An Interview Problem I was given to solve
 

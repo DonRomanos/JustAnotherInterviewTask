@@ -16,6 +16,7 @@ matrix:
 install:
   - pip install -U conan_package_tools
   - conan user
+  - conan profile update settings.compiler.libcxx=libstdc++11 default
   - conan remote add catchorg https://api.bintray.com/conan/catchorg/Catch2
   - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
 
