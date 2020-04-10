@@ -45,17 +45,36 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 
 #***************************************************************************
 option(BUILD_TESTS "Will build the tests verifying your result" ON)
-if( BUILD_TESTS)
-#    find_package(Catch2 REQUIRED)
-#    add_executable(${PROJECT_NAME}_Tests)
-#    target_sources(${PROJECT_NAME}_Tests PRIVATE 
-#        src/tests.cpp)
-#    target_include_directories(${PROJECT_NAME}_Tests PRIVATE
-#        src/)
-#    target_link_libraries(${PROJECT_NAME}_Tests PRIVATE
-#        Catch2::Catch2
-#        )
-#    include(Catch)
-#    catch_discover_tests(${PROJECT_NAME}_Tests)
-#    enable_testing()
+if(BUILD_TESTS)
+    find_package(Catch2)
+    if( NOT Catch2_FOUND)
+        message(STATUS "Catch2 was not found, tests are not available. (Catch2_DIR = ${Catch2_DIR})")
+        return()
+    endif()
+
+    add_executable(${PROJECT_NAME}_Tests)
+
+    target_sources(${PROJECT_NAME}_Tests PRIVATE 
+        src/tests/tests.cpp)
+
+    target_include_directories(${PROJECT_NAME}_Tests PRIVATE
+        src/)
+    target_link_libraries(${PROJECT_NAME}_Tests PRIVATE
+        Catch2::Catch2
+        Qt5::Widgets
+    )
+
+    # Again relying on folder structure, this is really not optimal but could not find a better way.
+    get_target_property(Catch2_include_with_generators Catch2::Catch2 INTERFACE_INCLUDE_DIRECTORIES)
+    # Have to retrieve the path wihtout generators: $<$<CONFIG:Release>:>;$<$<CONFIG:RelWithDebInfo>:>;$<$<CONFIG:MinSizeRel>:>;$<$<CONFIG:Debug>:C:/Users/...>
+    string(REGEX MATCH ">:([^>]+)" Catch2_Include ${Catch2_include_with_generators})
+    get_filename_component(Catch2_Dir ${CMAKE_MATCH_1} DIRECTORY)
+    message(STATUS "Looking for Catch.cmake in ${Catch2_Dir}")
+
+    include(${Catch2_Dir}/lib/cmake/Catch2/Catch.cmake)
+    catch_discover_tests(${PROJECT_NAME}_Tests)
+    enable_testing()
+
+    ## Special Test for the runtime to see if the application actually runs, so all dynamic libraries and platforms etc. are available
+    add_test(NAME "Qt_application_starts" COMMAND ${PROJECT_NAME} --dryrun)
 endif()

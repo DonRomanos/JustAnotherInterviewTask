@@ -17,4 +17,4 @@ class JustAnotherInterviewTask(ConanFile):
         cmake = CMake(self, generator='Ninja')
         cmake.configure()
         cmake.build()
-        #cmake.test() # If you dont have any tests this will fail!
+        cmake.test() # If you dont have any tests this will fail!

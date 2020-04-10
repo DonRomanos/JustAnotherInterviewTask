@@ -11,5 +11,5 @@ if __name__ == "__main__":
     builder.add_common_builds(pure_c=False)
     builder.remove_build_if(lambda build: build.settings["compiler.libcxx"] == "libstdc++")
     for settings, options, env_vars, build_requires, reference in builder.items:
-        settings["compiler.cppstd"] = "20"
+        settings["compiler.cppstd"] = "17"
     builder.run()

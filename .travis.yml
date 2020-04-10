@@ -16,6 +16,8 @@ matrix:
 install:
   - pip install -U conan_package_tools
   - conan user
+  - conan remote add catchorg https://api.bintray.com/conan/catchorg/Catch2
+  - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
 
 script:
   - python .travis_build.py
