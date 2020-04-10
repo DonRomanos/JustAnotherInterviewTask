@@ -1,78 +1,61 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(Challenge)
+project(Slideshow)
 
-add_library(${PROJECT_NAME} INTERFACE)
-add_library(Challenge::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+# Setting up everything for Qt5 including qt.conf pointing to platforms folder (relies on qt folder structure root/bin/dlls...)
+find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
-target_include_directories(${PROJECT_NAME} INTERFACE src/)
-target_sources(${PROJECT_NAME} INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/challenge.hpp)
-# Normally I would make this private, but since this is my own and I am lazy I can do this :)
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_20)
-target_compile_options(${PROJECT_NAME} INTERFACE
+get_target_property(Qt5_WidgetLocation Qt5::Widgets LOCATION)
+get_filename_component(Qt5_bin_folder ${Qt5_WidgetLocation} DIRECTORY)
+get_filename_component(Qt5_root ${Qt5_bin_folder} DIRECTORY)
+
+message(STATUS "Writing qt.conf file pointing to: ${Qt5_root}")
+file(WRITE "${CMAKE_BINARY_DIR}/qt.conf" "[Paths]\n\nPrefix = ${Qt5_root}")
+
+#***************************************************************************
+
+add_executable(${PROJECT_NAME})
+
+target_include_directories(${PROJECT_NAME} PRIVATE src/)
+
+target_sources(${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    Qt5::Widgets
+)
+
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+
+target_compile_options(${PROJECT_NAME}
+ PRIVATE
      $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-          -Wall>
+        -Wall -Werror -pedantic-errors -Wextra -Wconversion -Wsign-conversion>
      $<$<CXX_COMPILER_ID:MSVC>:
-          /W4>)
+        /WX /W4>
+)
 
-######################################################################
-option(BUILD_REFERENCE "Will build a reference implementation as a library, 
-                        which will also be tested and benchmarked. Cool for comparison." ON)
-if(BUILD_REFERENCE)
-    add_library(${PROJECT_NAME}_Reference INTERFACE)
-    add_library(onions::${PROJECT_NAME}_Reference ALIAS ${PROJECT_NAME}_Reference)
-    target_include_directories(${PROJECT_NAME}_Reference INTERFACE src/)
-    target_sources(${PROJECT_NAME}_Reference INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/reference.hpp)
-    target_compile_definitions(${PROJECT_NAME}_Reference INTERFACE BUILD_REFERENCE) # We will use this for an ifdef
-    target_compile_features(${PROJECT_NAME}_Reference INTERFACE cxx_std_20)
-    target_compile_options(${PROJECT_NAME}_Reference INTERFACE
-        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-            -Wall>
-        $<$<CXX_COMPILER_ID:MSVC>:
-            /W4>)
-endif()
+# Very specific, could also copy all dlls from bin folder for example or use windeploy qt. Not sure whats better, but this works.
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:Qt5::Core> $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:Qt5::Gui> $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:Qt5::Widgets> $<TARGET_FILE_DIR:${PROJECT_NAME}>
+)
 
-######################################################################
+#***************************************************************************
 option(BUILD_TESTS "Will build the tests verifying your result" ON)
 if( BUILD_TESTS)
-    find_package(gtest REQUIRED)
-    add_executable(${PROJECT_NAME}_Tests)
-    target_sources(${PROJECT_NAME}_Tests PRIVATE 
-        src/tests.cpp)
-    target_include_directories(${PROJECT_NAME}_Tests PRIVATE
-        src/)
-    target_link_libraries(${PROJECT_NAME}_Tests PRIVATE
-        Challenge::${PROJECT_NAME}
-        gtest::gtest
-        $<$<TARGET_EXISTS:${PROJECT_NAME}_Reference>:${PROJECT_NAME}_Reference>)
-
-    include(GoogleTest)
-    enable_testing()
-    gtest_discover_tests(${PROJECT_NAME}_Tests)
-endif()
-
-######################################################################
-option(BUILD_BENCHMARK "This will enable the performance tests using google benchmark" ON)
-if( BUILD_BENCHMARK)
-    find_package(benchmark REQUIRED)
-    # Requires PThreads on Linux
-    set(THREADS_PREFER_PTHREAD_FLAG ON)
-    find_package(Threads REQUIRED)
-
-    add_executable(${PROJECT_NAME}_Benchmark)
-    target_sources(${PROJECT_NAME}_Benchmark PRIVATE 
-        src/benchmark.cpp)
-    target_include_directories(${PROJECT_NAME}_Benchmark PRIVATE
-        src/benchmark)
-    target_link_libraries(${PROJECT_NAME}_Benchmark PRIVATE
-        Challenge::${PROJECT_NAME}
-        benchmark::benchmark
-        Threads::Threads
-        $<$<TARGET_EXISTS:${PROJECT_NAME}_Reference>:${PROJECT_NAME}_Reference>)
-
-    add_custom_target(NAME ${PROJECT_NAME}_Benchmark
-        COMMAND ${PROJECT_NAME}_Benchmark
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+#    find_package(Catch2 REQUIRED)
+#    add_executable(${PROJECT_NAME}_Tests)
+#    target_sources(${PROJECT_NAME}_Tests PRIVATE 
+#        src/tests.cpp)
+#    target_include_directories(${PROJECT_NAME}_Tests PRIVATE
+#        src/)
+#    target_link_libraries(${PROJECT_NAME}_Tests PRIVATE
+#        Catch2::Catch2
+#        )
+#    include(Catch)
+#    catch_discover_tests(${PROJECT_NAME}_Tests)
+#    enable_testing()
 endif()
