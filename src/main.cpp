@@ -1,10 +1,7 @@
-#include <QApplication>
-#include <QPushButton>
-#include "qtimer.h"
+#include "ui.hpp"
 
-#include <algorithm>
-#include <iterator>
-#include <string_view>
+#include <QApplication>
+#include <QTimer>
 
 #include <algorithm>
 #include <iterator>
@@ -19,6 +16,9 @@ int main(int argc, char** argv)
     {
         QTimer::singleShot(0, &app, SLOT(quit()));
     }
+
+    auto main_panel = ui::MainPanel{};
+    main_panel.show();
 
     return app.exec();
 }

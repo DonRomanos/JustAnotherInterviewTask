@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.12)
 project(Slideshow)
 
 # Setting up everything for Qt5 including qt.conf pointing to platforms folder (relies on qt folder structure root/bin/dlls...)
+set(CMAKE_AUTOMOC ON)
+
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
 get_target_property(Qt5_WidgetLocation Qt5::Widgets LOCATION)
@@ -19,7 +21,9 @@ add_executable(${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PRIVATE src/)
 
 target_sources(${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
