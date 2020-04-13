@@ -32,6 +32,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt5::Widgets
 )
 
+target_link_options(${PROJECT_NAME} PRIVATE 
+    $<$<CXX_COMPILER_ID:MSVC>:/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup> # don't want a console window
+) 
+
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 target_compile_options(${PROJECT_NAME}
