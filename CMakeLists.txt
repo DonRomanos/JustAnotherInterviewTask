@@ -22,15 +22,17 @@ target_include_directories(${PROJECT_NAME} PRIVATE src/)
 
 target_sources(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/image_provider.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/image_provider.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt5::Widgets
 )
 
-target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 target_compile_options(${PROJECT_NAME}
  PRIVATE
@@ -59,7 +61,9 @@ if(BUILD_TESTS)
     add_executable(${PROJECT_NAME}_Tests)
 
     target_sources(${PROJECT_NAME}_Tests PRIVATE 
-        src/tests/tests.cpp)
+        src/tests/tests.cpp
+        src/image_provider.cpp
+    )
 
     target_include_directories(${PROJECT_NAME}_Tests PRIVATE
         src/)
@@ -68,15 +72,17 @@ if(BUILD_TESTS)
         Qt5::Widgets
     )
 
-    # Again relying on folder structure, this is really not optimal but could not find a better way.
-    get_target_property(Catch2_include_with_generators Catch2::Catch2 INTERFACE_INCLUDE_DIRECTORIES)
-    # Have to retrieve the path wihtout generators: $<$<CONFIG:Release>:>;$<$<CONFIG:RelWithDebInfo>:>;$<$<CONFIG:MinSizeRel>:>;$<$<CONFIG:Debug>:C:/Users/...>
-    string(REGEX MATCH ">:([^>]+)" Catch2_Include ${Catch2_include_with_generators})
-    get_filename_component(Catch2_Dir ${CMAKE_MATCH_1} DIRECTORY)
-    message(STATUS "Looking for Catch.cmake in ${Catch2_Dir}")
+    target_compile_features(${PROJECT_NAME}_Tests PUBLIC cxx_std_17)
 
-    include(${Catch2_Dir}/lib/cmake/Catch2/Catch.cmake)
-    catch_discover_tests(${PROJECT_NAME}_Tests)
+    # Again relying on folder structure, this is really not optimal but could not find a better way.
+    #get_target_property(Catch2_include_with_generators Catch2::Catch2 INTERFACE_LINK_DIRECTORIES)
+    # Have to retrieve the path without generators: $<$<CONFIG:Release>:>;$<$<CONFIG:RelWithDebInfo>:>;$<$<CONFIG:MinSizeRel>:>;$<$<CONFIG:Debug>:C:/Users/...>
+    #string(REGEX MATCH ">:([^>]+)" Catch2_Include ${Catch2_include_with_generators})
+    #get_filename_component(Catch2_Dir ${CMAKE_MATCH_1} DIRECTORY)
+    message(STATUS "Looking for Catch.cmake in ${Catch2_LIB_DIRS}/cmake/Catch2")
+
+    include(${Catch2_LIB_DIRS}/cmake/Catch2/Catch.cmake)
+    catch_discover_tests(${PROJECT_NAME}_Tests WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/src/tests/testfiles")
     enable_testing()
 
     ## Special Test for the runtime to see if the application actually runs, so all dynamic libraries and platforms etc. are available
