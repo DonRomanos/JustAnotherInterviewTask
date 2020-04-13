@@ -17,6 +17,6 @@ namespace core
 		Vertical
 	};
 	
-	std::future<QImage> start_loading_image(const std::filesystem::path& file);
+	std::future<QImage> start_loading_image(const std::filesystem::path& file, MirrorModes mirror_mode = MirrorModes::None);
 
 }

@@ -123,7 +123,7 @@ void ui::MainPanel::update_files_to_display()
 
 	if (next_file_to_display != std::end(files_to_display))
 	{
-		next_image = core::start_loading_image(*next_file_to_display);
+		next_image = core::start_loading_image(*next_file_to_display, current_mirror_mode);
 	}
 }
 
@@ -137,7 +137,7 @@ void ui::MainPanel::start_loading_next_image()
 
 	if (next_file_to_display != std::end(files_to_display))
 	{
-		next_image = core::start_loading_image(*next_file_to_display);
+		next_image = core::start_loading_image(*next_file_to_display, current_mirror_mode);
 	}
 }
 
