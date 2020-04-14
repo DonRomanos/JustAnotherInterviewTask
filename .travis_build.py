@@ -2,6 +2,7 @@ from cpt.packager import ConanMultiPackager
 import subprocess
 
 if __name__ == "__main__":
+    # need to add some remotes, another option is to use conan config feature with: config_url=config_url, see https://github.com/bincrafters/bincrafters-config
     docker_setup_command = "conan remote add catchorg https://api.bintray.com/conan/catchorg/Catch2 && conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan"
 
     builder = ConanMultiPackager(
