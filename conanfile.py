@@ -38,7 +38,7 @@ class JustAnotherInterviewTask(ConanFile):
         self.copy("*.dylib", "", "lib")
 
     def build(self):
-        cmake = CMake(self)
+        cmake = CMake(self, generator='Ninja')
         cmake.configure()
         cmake.build()
         cmake.test() # If you dont have any tests this will fail!

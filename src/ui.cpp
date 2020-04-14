@@ -96,13 +96,30 @@ void ui::MainPanel::start_stop_slideshow()
 
 void ui::MainPanel::mirror_mode_changed(int new_mode)
 {
-	current_mirror_mode = static_cast<core::MirrorModes>(new_mode); // important to keep the enum indices in sync with the combobox
+	// important to keep the enum indices in sync with the combobox, another way would be QENUM or XMacro, for this small application I think this is fine.
+	current_mirror_mode = static_cast<core::MirrorModes>(new_mode); 
+	if (current_image.isNull())
+	{
+		return;
+	}
+
+	// I want to update the image immediately when the user selects something so we have to make sure that we dont skip an image.
+	next_image = core::apply_mirror(current_image.toImage(), current_mirror_mode);
+	if (next_file_to_display == std::begin(files_to_display) && !files_to_display.empty())
+	{
+		next_file_to_display = std::end(files_to_display) - 1;
+	}
+	else
+	{
+		--next_file_to_display;
+	}
+	update_image();
 }
 
 void ui::MainPanel::change_folder()
 {
 	auto from_file_dialog = QFileDialog::getExistingDirectory(this, tr("Open Directory"), QDir::currentPath(), QFileDialog::DontResolveSymlinks);
-	if (from_file_dialog.isNull())
+	if (from_file_dialog.isNull()) // important, this happens when the user presses abort
 	{
 		return;
 	}
