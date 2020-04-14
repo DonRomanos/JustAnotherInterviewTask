@@ -16,10 +16,8 @@ namespace
 	{
 		auto formats = QImageReader::supportedImageFormats();
 		QString result;
-		for (auto format : formats)
-		{
-			result += format + " ";
-		}
+		std::for_each(std::begin(formats), std::end(formats), [&result](QByteArray format) {result.append(format + QString(", ")); });
+		result.chop(2); // remove last comma and space.
 		return result;
 	}
 

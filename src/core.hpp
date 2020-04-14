@@ -18,5 +18,5 @@ namespace core
 	};
 	
 	std::future<QImage> start_loading_image(const std::filesystem::path& file, MirrorModes mirror_mode = MirrorModes::None);
-
+	std::future<QImage> apply_mirror(QImage&& image, MirrorModes mirrorMode);
 }

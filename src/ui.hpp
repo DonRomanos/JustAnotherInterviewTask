@@ -1,6 +1,6 @@
 #pragma once
 
-#include "image_provider.hpp"
+#include "core.hpp"
 
 #include <QWidget>
 #include <QPixmap>

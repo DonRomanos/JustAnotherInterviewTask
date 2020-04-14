@@ -11,8 +11,12 @@ get_target_property(Qt5_WidgetLocation Qt5::Widgets LOCATION)
 get_filename_component(Qt5_bin_folder ${Qt5_WidgetLocation} DIRECTORY)
 get_filename_component(Qt5_root ${Qt5_bin_folder} DIRECTORY)
 
-message(STATUS "Writing qt.conf file pointing to: ${Qt5_root}")
-file(WRITE "${CMAKE_BINARY_DIR}/qt.conf" "[Paths]\n\nPrefix = ${Qt5_root}")
+if(NOT EXISTS ${CMAKE_BINARY_DIR}/qt.conf)
+    message(STATUS "Writing qt.conf file pointing to: ${Qt5_root}")
+    file(WRITE "${CMAKE_BINARY_DIR}/qt.conf" "[Paths]\n\nPrefix = ${Qt5_root}")
+else()
+    message(STATUS "Using existing qt.conf file: ${CMAKE_BINARY_DIR}/qt.conf")
+endif()
 
 #***************************************************************************
 
@@ -22,10 +26,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE src/)
 
 target_sources(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/image_provider.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/image_provider.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -66,7 +70,7 @@ if(BUILD_TESTS)
 
     target_sources(${PROJECT_NAME}_Tests PRIVATE 
         src/tests/tests.cpp
-        src/image_provider.cpp
+        src/core.cpp
     )
 
     target_include_directories(${PROJECT_NAME}_Tests PRIVATE
