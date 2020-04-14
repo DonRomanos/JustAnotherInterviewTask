@@ -1,78 +1,98 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(Challenge)
+project(Slideshow)
 
-add_library(${PROJECT_NAME} INTERFACE)
-add_library(Challenge::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+# Setting up everything for Qt5 including qt.conf pointing to platforms folder (relies on qt folder structure root/bin/dlls...)
+set(CMAKE_AUTOMOC ON)
 
-target_include_directories(${PROJECT_NAME} INTERFACE src/)
-target_sources(${PROJECT_NAME} INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/challenge.hpp)
-# Normally I would make this private, but since this is my own and I am lazy I can do this :)
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_20)
-target_compile_options(${PROJECT_NAME} INTERFACE
-     $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-          -Wall>
-     $<$<CXX_COMPILER_ID:MSVC>:
-          /W4>)
+find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
-######################################################################
-option(BUILD_REFERENCE "Will build a reference implementation as a library, 
-                        which will also be tested and benchmarked. Cool for comparison." ON)
-if(BUILD_REFERENCE)
-    add_library(${PROJECT_NAME}_Reference INTERFACE)
-    add_library(onions::${PROJECT_NAME}_Reference ALIAS ${PROJECT_NAME}_Reference)
-    target_include_directories(${PROJECT_NAME}_Reference INTERFACE src/)
-    target_sources(${PROJECT_NAME}_Reference INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/reference.hpp)
-    target_compile_definitions(${PROJECT_NAME}_Reference INTERFACE BUILD_REFERENCE) # We will use this for an ifdef
-    target_compile_features(${PROJECT_NAME}_Reference INTERFACE cxx_std_20)
-    target_compile_options(${PROJECT_NAME}_Reference INTERFACE
-        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-            -Wall>
-        $<$<CXX_COMPILER_ID:MSVC>:
-            /W4>)
+get_target_property(Qt5_WidgetLocation Qt5::Widgets LOCATION)
+get_filename_component(Qt5_bin_folder ${Qt5_WidgetLocation} DIRECTORY)
+get_filename_component(Qt5_root ${Qt5_bin_folder} DIRECTORY)
+
+if(NOT EXISTS ${CMAKE_BINARY_DIR}/qt.conf)
+    message(STATUS "Writing qt.conf file pointing to: ${Qt5_root}")
+    file(WRITE "${CMAKE_BINARY_DIR}/qt.conf" "[Paths]\n\nPrefix = ${Qt5_root}")
+else()
+    message(STATUS "Using existing qt.conf file: ${CMAKE_BINARY_DIR}/qt.conf")
 endif()
 
-######################################################################
+#***************************************************************************
+
+add_executable(${PROJECT_NAME})
+
+target_include_directories(${PROJECT_NAME} PRIVATE src/)
+
+target_sources(${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core.cpp
+)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    Qt5::Widgets
+)
+
+target_link_options(${PROJECT_NAME} PRIVATE 
+    $<$<CXX_COMPILER_ID:MSVC>:/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup> # don't want a console window
+) 
+
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+
+target_compile_options(${PROJECT_NAME}
+ PRIVATE
+     $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
+        -Wall -Werror -pedantic-errors -Wextra -Wconversion -Wsign-conversion>
+     $<$<CXX_COMPILER_ID:MSVC>:
+        /WX /W4>
+)
+
+# Very specific, could also copy all dlls from bin folder for example or use windeploy qt. Not sure whats better, but this works.
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:Qt5::Core> $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:Qt5::Gui> $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:Qt5::Widgets> $<TARGET_FILE_DIR:${PROJECT_NAME}>
+)
+
+#***************************************************************************
 option(BUILD_TESTS "Will build the tests verifying your result" ON)
-if( BUILD_TESTS)
-    find_package(gtest REQUIRED)
+if(BUILD_TESTS)
+    find_package(Catch2)
+    if( NOT Catch2_FOUND)
+        message(STATUS "Catch2 was not found, tests are not available. (Catch2_DIR = ${Catch2_DIR})")
+        return()
+    endif()
+
     add_executable(${PROJECT_NAME}_Tests)
+
     target_sources(${PROJECT_NAME}_Tests PRIVATE 
-        src/tests.cpp)
+        src/tests/tests.cpp
+        src/core.cpp
+    )
+
     target_include_directories(${PROJECT_NAME}_Tests PRIVATE
         src/)
     target_link_libraries(${PROJECT_NAME}_Tests PRIVATE
-        Challenge::${PROJECT_NAME}
-        gtest::gtest
-        $<$<TARGET_EXISTS:${PROJECT_NAME}_Reference>:${PROJECT_NAME}_Reference>)
+        Catch2::Catch2
+        Qt5::Widgets
+    )
 
-    include(GoogleTest)
+    target_compile_features(${PROJECT_NAME}_Tests PUBLIC cxx_std_17)
+
+    # Again relying on folder structure, this is really not optimal but could not find a better way.
+    #get_target_property(Catch2_include_with_generators Catch2::Catch2 INTERFACE_LINK_DIRECTORIES)
+    # Have to retrieve the path without generators: $<$<CONFIG:Release>:>;$<$<CONFIG:RelWithDebInfo>:>;$<$<CONFIG:MinSizeRel>:>;$<$<CONFIG:Debug>:C:/Users/...>
+    #string(REGEX MATCH ">:([^>]+)" Catch2_Include ${Catch2_include_with_generators})
+    #get_filename_component(Catch2_Dir ${CMAKE_MATCH_1} DIRECTORY)
+    message(STATUS "Looking for Catch.cmake in ${Catch2_LIB_DIRS}/cmake/Catch2")
+
+    include(${Catch2_LIB_DIRS}/cmake/Catch2/Catch.cmake)
+    catch_discover_tests(${PROJECT_NAME}_Tests WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/src/tests/testfiles")
     enable_testing()
-    gtest_discover_tests(${PROJECT_NAME}_Tests)
-endif()
 
-######################################################################
-option(BUILD_BENCHMARK "This will enable the performance tests using google benchmark" ON)
-if( BUILD_BENCHMARK)
-    find_package(benchmark REQUIRED)
-    # Requires PThreads on Linux
-    set(THREADS_PREFER_PTHREAD_FLAG ON)
-    find_package(Threads REQUIRED)
-
-    add_executable(${PROJECT_NAME}_Benchmark)
-    target_sources(${PROJECT_NAME}_Benchmark PRIVATE 
-        src/benchmark.cpp)
-    target_include_directories(${PROJECT_NAME}_Benchmark PRIVATE
-        src/benchmark)
-    target_link_libraries(${PROJECT_NAME}_Benchmark PRIVATE
-        Challenge::${PROJECT_NAME}
-        benchmark::benchmark
-        Threads::Threads
-        $<$<TARGET_EXISTS:${PROJECT_NAME}_Reference>:${PROJECT_NAME}_Reference>)
-
-    add_custom_target(NAME ${PROJECT_NAME}_Benchmark
-        COMMAND ${PROJECT_NAME}_Benchmark
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+    ## Special Test for the runtime to see if the application actually runs, so all dynamic libraries and platforms etc. are available
+    add_test(NAME "Qt_application_starts" COMMAND ${PROJECT_NAME} --dryrun)
 endif()
