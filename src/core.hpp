@@ -17,6 +17,6 @@ namespace core
 		Vertical
 	};
 	
-	std::future<QImage> start_loading_image(const std::filesystem::path& file, MirrorModes mirror_mode = MirrorModes::None);
-	std::future<QImage> apply_mirror(QImage&& image, MirrorModes mirrorMode);
+	[[nodiscard]] std::future<QImage> start_loading_image(const std::filesystem::path& file, MirrorModes mirror_mode = MirrorModes::None);
+	[[nodiscard]] std::future<QImage> apply_mirror(const QImage& image, MirrorModes mirrorMode);
 }

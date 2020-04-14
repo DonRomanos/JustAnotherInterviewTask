@@ -14,7 +14,7 @@ namespace
 	{
 		if (mirror_mode == core::MirrorModes::Horizontal)
 		{
-			return image.mirrored(true, false); // bool parameters... yay (horizontal, vertical)
+			return image.mirrored(false, true); // bool parameters... yay (horizontal, vertical)
 		}
 		else if (mirror_mode == core::MirrorModes::Vertical)
 		{
@@ -39,9 +39,10 @@ std::future<QImage> core::start_loading_image(const fs::path& file, MirrorModes 
 	);
 }
 
-std::future<QImage> core::apply_mirror(QImage&& image, MirrorModes mirror_mode)
+std::future<QImage> core::apply_mirror(const QImage& image, MirrorModes mirror_mode)
 {
-	return std::async(std::launch::async, [image{ std::move(image) }, mirror_mode]()
+	// Don't have to move image since QImage is copy on write by default.
+	return std::async(std::launch::async, [image, mirror_mode]()
 		{
 			return mirror_image(image, mirror_mode);
 		}

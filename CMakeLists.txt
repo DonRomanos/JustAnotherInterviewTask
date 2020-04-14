@@ -82,11 +82,7 @@ if(BUILD_TESTS)
 
     target_compile_features(${PROJECT_NAME}_Tests PUBLIC cxx_std_17)
 
-    # Again relying on folder structure, this is really not optimal but could not find a better way.
-    #get_target_property(Catch2_include_with_generators Catch2::Catch2 INTERFACE_LINK_DIRECTORIES)
-    # Have to retrieve the path without generators: $<$<CONFIG:Release>:>;$<$<CONFIG:RelWithDebInfo>:>;$<$<CONFIG:MinSizeRel>:>;$<$<CONFIG:Debug>:C:/Users/...>
-    #string(REGEX MATCH ">:([^>]+)" Catch2_Include ${Catch2_include_with_generators})
-    #get_filename_component(Catch2_Dir ${CMAKE_MATCH_1} DIRECTORY)
+    # FindPackage should set this variable...
     message(STATUS "Looking for Catch.cmake in ${Catch2_LIB_DIRS}/cmake/Catch2")
 
     include(${Catch2_LIB_DIRS}/cmake/Catch2/Catch.cmake)
