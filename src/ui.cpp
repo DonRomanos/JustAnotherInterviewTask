@@ -32,7 +32,7 @@ ui::MainPanel::MainPanel()
 	: start_stop_button(new QPushButton(tr("Stop Slideshow"), this))
 	, current_mirror_mode(core::MirrorModes::None)
 	, change_image_timer(new QTimer(this))
-	, current_image(QSize(640, 480))
+	, current_image()
 	, image_display(new QLabel{ nullptr })
 	, selected_directory(fs::current_path())
 	, folder_label(new QLabel{ nullptr })
@@ -160,6 +160,7 @@ void ui::MainPanel::update_image()
 {
 	if (next_file_to_display == std::end(files_to_display)) // Folder does not contain any supported formats...
 	{
+		current_image = QPixmap();
 		image_display->setText(tr("Selected folder does not contain any supported images"));
 		return;
 	}
@@ -167,6 +168,7 @@ void ui::MainPanel::update_image()
 	QImage loaded_image = next_image.get();
 	if (loaded_image.isNull())
 	{
+		current_image = QPixmap();
 		image_display->setText(tr("Unable to load: ") + QString::fromStdString(next_file_to_display->string()));
 	} 
 	else
