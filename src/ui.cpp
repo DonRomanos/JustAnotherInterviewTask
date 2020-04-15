@@ -29,14 +29,15 @@ namespace
 }
 
 ui::MainPanel::MainPanel()
-	: start_stop_button(new QPushButton(tr("Stop Slideshow"), this))
+	: images_in_folder(fs::current_path())
+	, next_image(images_in_folder.load_next_image())
 	, current_mirror_mode(core::MirrorModes::None)
+	, start_stop_button(new QPushButton(tr("Stop Slideshow"), this))
 	, change_image_timer(new QTimer(this))
-	, current_image()
 	, image_display(new QLabel{ nullptr })
-	, selected_directory(fs::current_path())
 	, folder_label(new QLabel{ nullptr })
 {
+	// A lot of boilerplate for the UI ...
 	image_display->setPixmap(current_image);
 	image_display->setMinimumWidth(640);
 	image_display->setMinimumHeight(480);
@@ -47,7 +48,7 @@ ui::MainPanel::MainPanel()
 	auto vertical_layout = new QVBoxLayout;
 	vertical_layout->setAlignment(Qt::AlignTop);
 
-	folder_label->setText(tr("Current Folder: ") + QString::fromStdString(selected_directory.string()));
+	folder_label->setText(tr("Current Folder: ") + QString::fromStdString(fs::current_path().string()));
 	vertical_layout->addWidget(folder_label);
 	auto file_selection = new QPushButton{ tr("Select Folder..."), this };
 
@@ -77,7 +78,7 @@ ui::MainPanel::MainPanel()
 	const int interval_between_image_changes_in_ms = 2000;
 	change_image_timer->start(interval_between_image_changes_in_ms);
 
-	update_files_to_display();
+	update_image();
 }
 
 void ui::MainPanel::start_stop_slideshow()
@@ -94,26 +95,19 @@ void ui::MainPanel::start_stop_slideshow()
 	}
 }
 
-void ui::MainPanel::mirror_mode_changed(int new_mode)
+void ui::MainPanel::mirror_mode_changed(int mode)
 {
 	// important to keep the enum indices in sync with the combobox, another way would be QENUM or XMacro, for this small application I think this is fine.
-	current_mirror_mode = static_cast<core::MirrorModes>(new_mode); 
-	if (current_image.isNull())
+	auto new_mode = static_cast<core::MirrorModes>(mode);
+	
+	if (!current_image.isNull())
 	{
-		return;
+		// Want the change to be visible immediately without skipping an image.
+		auto mirrored = core::ImageProvider::apply_mirror_mode(new_mode, { current_image.toImage(), current_mirror_mode });
+		current_image.convertFromImage(mirrored.get());
+		image_display->setPixmap(current_image);
 	}
-
-	// I want to update the image immediately when the user selects something so we have to make sure that we dont skip an image.
-	next_image = core::apply_mirror(current_image.toImage(), current_mirror_mode);
-	if (next_file_to_display == std::begin(files_to_display) && !files_to_display.empty())
-	{
-		next_file_to_display = std::end(files_to_display) - 1;
-	}
-	else
-	{
-		--next_file_to_display;
-	}
-	update_image();
+	current_mirror_mode = new_mode;
 }
 
 void ui::MainPanel::change_folder()
@@ -125,57 +119,31 @@ void ui::MainPanel::change_folder()
 	}
 	
 	folder_label->setText(tr("Current Folder: ") + from_file_dialog);
-	selected_directory = fs::path(from_file_dialog.toStdString());
-	update_files_to_display();
-}
-
-void ui::MainPanel::update_files_to_display()
-{
-	files_to_display.clear();
-	std::copy_if(fs::directory_iterator(selected_directory), fs::directory_iterator(), std::back_inserter(files_to_display),
-		[](fs::directory_entry elem) {return elem.is_regular_file() && has_supported_extension(elem); });
-	next_file_to_display = files_to_display.begin();
-
-	if (next_file_to_display != std::end(files_to_display))
-	{
-		next_image = core::start_loading_image(*next_file_to_display, current_mirror_mode);
-	}
-}
-
-void ui::MainPanel::start_loading_next_image()
-{
-	++next_file_to_display;
-	if (next_file_to_display == std::end(files_to_display)) // wrap around if we reach the end
-	{
-		update_files_to_display();
-	}
-
-	if (next_file_to_display != std::end(files_to_display))
-	{
-		next_image = core::start_loading_image(*next_file_to_display, current_mirror_mode);
-	}
+	images_in_folder = core::ImageProvider(from_file_dialog.toStdString());
+	next_image = images_in_folder.load_next_image(current_mirror_mode);
+	update_image();
 }
 
 void ui::MainPanel::update_image()
 {
-	if (next_file_to_display == std::end(files_to_display)) // Folder does not contain any supported formats...
+	if (!next_image.valid()) // No images in folder...
 	{
 		current_image = QPixmap();
-		image_display->setText(tr("Selected folder does not contain any supported images"));
+		image_display->setText(tr("No supported images in folder"));
 		return;
 	}
 
-	QImage loaded_image = next_image.get();
-	if (loaded_image.isNull())
+	auto loaded_image = next_image.get();
+	if (loaded_image.isNull()) // Folder does not contain any supported formats or next image could not be loaded
 	{
 		current_image = QPixmap();
-		image_display->setText(tr("Unable to load: ") + QString::fromStdString(next_file_to_display->string()));
-	} 
+		image_display->setText(tr("Unable to load image"));
+	}
 	else
 	{
 		current_image.convertFromImage(std::move(loaded_image));
 		image_display->setPixmap(current_image);
 	}
-
-	start_loading_next_image();
+	
+	next_image = images_in_folder.load_next_image(current_mirror_mode);
 }

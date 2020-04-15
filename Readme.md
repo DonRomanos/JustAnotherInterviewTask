@@ -3,7 +3,7 @@
 
 # A task for an Interview using Qt and C++
 
-A Qt Application running a slideshow of images in a selected folder.
+A Qt Application running a slideshow of images in a selected folder. Image loading had to be non-blocking, also provides an option to mirror images along the horizontal or vertical axis.
 
 ![This is how the application looks on windows](Screenshot.bmp)
 
@@ -27,7 +27,7 @@ Here are some assumptions that I did which I would normally discuss with the PO.
 * If the folder is empty the display will show an error message
 * After reaching the end of the folder the slideshow will restart from the beginning (reloading the folder content)
 * Images that take longer than 2 seconds to load will block the UI (as the UI will wait for the image in that case, should not really happen with "normal" images)
-* Images that are deleted or added during the Slideshow will only be recognized with the next full loop (as only then the folder content is refreshed)
+* There is no special handling for files added or deleted during the slideshow
 * When changing the mirror mode the UI will wait for the operation to complete (so its possible for it to block, but was never noticeable for me)
 
 Some other ideas that can be implemented if necessary
@@ -85,4 +85,4 @@ My first approach was based on passing and copying a directory_iterator, until I
 
 **A little something about the architecture**
 
-At the moment there is very little logic in core, only for async loading and mirroring the image. In the future I would also put the logic for selecting the next image there, so that there is no logic at all left in the ui. That also would offer more possibilities to unit test.
+I tried to keep the logic in the UI to the minimum. Therefore all the next handling is done within ImageProvider. This makes testing easier and looks quite elegant to me. This was not the first approach though :)
