@@ -11,47 +11,6 @@ namespace
 	QString toQString(const char* in) { return QString::fromStdString(in); }
 	QString toQString(const wchar_t* in) { return QString::fromStdWString(in); }
 
-	inline QImage mirror_image(const QImage& image, core::MirrorModes mirror_mode)
-	{
-		if (mirror_mode == core::MirrorModes::Horizontal)
-		{
-			return image.mirrored(false, true); // bool parameters... yay (horizontal, vertical)
-		}
-		else if (mirror_mode == core::MirrorModes::Vertical)
-		{
-			return image.mirrored(true, false);
-		}
-		return image;
-	}
-}
-
-std::future<QImage> core::start_loading_image(const fs::path& file, MirrorModes mirror_mode)
-{
-	return std::async(std::launch::async, [file, mirror_mode]()
-		{
-			auto result = QImage(toQString(file.c_str()));
-			if (!result.isNull())
-			{
-				return mirror_image(result, mirror_mode);
-			}
-			// Unable to load image...
-			return QImage();
-		}
-	);
-}
-
-std::future<QImage> core::apply_mirror(const QImage& image, MirrorModes mirror_mode)
-{
-	// Don't have to move image since QImage is copy on write by default.
-	return std::async(std::launch::async, [image, mirror_mode]()
-		{
-			return mirror_image(image, mirror_mode);
-		}
-	);
-}
-
-namespace
-{
 	bool has_supported_extension(const fs::path& file)
 	{
 		const auto formats = QImageReader::supportedImageFormats();
@@ -64,6 +23,19 @@ namespace
 		{
 			++current_entry;
 		}
+	}
+
+	inline QImage mirror_image(const QImage& image, core::MirrorModes mirror_mode)
+	{
+		if (mirror_mode == core::MirrorModes::Horizontal)
+		{
+			return image.mirrored(false, true); // bool parameters... yay (horizontal, vertical)
+		}
+		else if (mirror_mode == core::MirrorModes::Vertical)
+		{
+			return image.mirrored(true, false);
+		}
+		return image;
 	}
 }
 
@@ -83,7 +55,7 @@ std::future<QImage> core::ImageProvider::load_next_image(MirrorModes mirror_mode
 		advance_until_supported_image(next_entry);
 		if (next_entry == fs::directory_iterator())
 		{
-			return std::async([](){return QImage(); }); // no files available for loading.
+			return std::future<QImage>(); // no files available for loading.
 		}
 	}
 

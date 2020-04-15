@@ -3,10 +3,7 @@
 #include <QImage>
 
 #include <filesystem>
-#include <vector>
 #include <future>
-#include <string_view>
-#include <utility>
 
 namespace core
 {
@@ -30,7 +27,7 @@ namespace core
 	public:
 		explicit ImageProvider(const std::filesystem::path& dir);
 		
-		// Loads an image asynchronously and mirrors it if requested
+		// Loads an image asynchronously and mirrors it if requested, returns an invalid future if no images are available and a Null image if loading of the image failed.
 		[[nodiscard]] std::future<QImage> load_next_image(MirrorModes mirror_mode = MirrorModes::None);
 
 		// Mirrors an image asynchronously while first undoing any old mirror, if there was any
@@ -40,7 +37,4 @@ namespace core
 		std::filesystem::path directory;
 		std::filesystem::directory_iterator next_entry;
 	};
-	
-	[[nodiscard]] std::future<QImage> start_loading_image(const std::filesystem::path& file, MirrorModes mirror_mode = MirrorModes::None);
-	[[nodiscard]] std::future<QImage> apply_mirror(const QImage& image, MirrorModes mirrorMode);
 }
