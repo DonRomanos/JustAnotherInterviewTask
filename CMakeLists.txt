@@ -19,6 +19,11 @@ else()
 endif()
 
 #***************************************************************************
+# Required for Linux
+
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+#***************************************************************************
 
 add_executable(${PROJECT_NAME})
 
@@ -34,6 +39,7 @@ target_sources(${PROJECT_NAME} PRIVATE
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt5::Widgets
+    Threads::Threads
 )
 
 target_link_options(${PROJECT_NAME} PRIVATE 
@@ -45,7 +51,7 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 target_compile_options(${PROJECT_NAME}
  PRIVATE
      $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-        -Wall -Werror -pedantic-errors -Wextra -Wconversion -Wsign-conversion>
+        -Wall -Werror -pedantic-errors -Wextra -Wconversion -Wsign-conversion -Wno-unused-function>
      $<$<CXX_COMPILER_ID:MSVC>:
         /WX /W4>
 )
@@ -78,6 +84,7 @@ if(BUILD_TESTS)
     target_link_libraries(${PROJECT_NAME}_Tests PRIVATE
         Catch2::Catch2
         Qt5::Widgets
+        Threads::Threads
     )
 
     target_compile_features(${PROJECT_NAME}_Tests PUBLIC cxx_std_17)
